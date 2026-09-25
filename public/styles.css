@@ -39,7 +39,7 @@ html, body {
 
 body {
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto auto auto 1fr;
   overflow: hidden;
 }
 
@@ -285,3 +285,35 @@ dialog#publish h3 {
 .dialog-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 .pub-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 #pub-status.error { color: var(--danger); }
+
+/* Acceso rápido */
+.launcher {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 16px;
+  overflow-x: auto;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.launcher-label { font-size: 16px; }
+.launch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.launch:hover { border-color: var(--accent); }
+a.button { text-decoration: none; text-align: center; }
+.open-big { flex: 1; padding: 9px 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pin { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; cursor: pointer; }
+.pin input { width: auto; margin: 0; }

@@ -14,6 +14,9 @@
     persona: { label: 'Persona', color: '#39c0d8' },
   };
   const STORAGE_KEY = 'cerebro:v1';
+  // Sube este número al añadir nodos predeterminados: se agregan a cerebros ya existentes.
+  const DEFAULTS_VERSION = 2;
+  const PINNED_DEFAULTS = ['flow', 'art-autoprompt', 'art-sala', 'filmora', 'tiktok', 'ej-app'];
   const WIKILINK = /\[\[([^\]\n]+)\]\]/g;
 
   // ---------- Utilidades ----------
@@ -65,8 +68,9 @@
 
   // ---------- Modelo ----------
   function normalize(raw) {
-    const data = { version: 1, nodes: [], links: [] };
+    const data = { version: 1, defaultsVersion: 1, nodes: [], links: [] };
     if (!raw || !Array.isArray(raw.nodes)) return data;
+    data.defaultsVersion = Number(raw.defaultsVersion) || 1;
     const ids = new Set();
     for (const n of raw.nodes) {
       if (!n || typeof n !== 'object') continue;
@@ -80,6 +84,7 @@
         url: String(n.url || ''),
         tags: Array.isArray(n.tags) ? n.tags.map(String).filter(Boolean) : [],
         description: String(n.description || ''),
+        pinned: !!n.pinned,
         x: typeof n.x === 'number' ? n.x : undefined,
         y: typeof n.y === 'number' ? n.y : undefined,
         created: n.created || now(),
@@ -96,7 +101,7 @@
   function seed() {
     const t = now();
     const n = (id, type, title, description, extra = {}) => ({ id, type, title, description, url: '', tags: [], created: t, updated: t, ...extra });
-    return normalize({
+    const data = normalize({
       nodes: [
         n('centro', 'proyecto', 'Mi Cerebro',
           'Este es el centro de tu segundo cerebro.\n\nCada cosa que usas o creas —apps, artefactos, proyectos, notas, enlaces, personas— es un nodo. Conéctalos entre sí para ver cómo se relaciona todo.\n\nEscribe [[Cómo usar Cerebro]] en cualquier descripción para crear una conexión automática.',
@@ -109,6 +114,7 @@
         n('ej-repo', 'app', 'GitHub', 'Donde vive el código de mis proyectos.', { url: 'https://github.com', tags: ['código'] }),
         n('ej-idea', 'idea', 'Próxima idea', 'Anota aquí ideas sueltas y conéctalas con lo que ya existe.'),
         ...videoWorkflowNodes(t),
+        ...myArtifactNodes(t),
       ],
       links: [
         { source: 'centro', target: 'guia', label: 'empieza aquí' },
@@ -118,8 +124,12 @@
         { source: 'centro', target: 'ej-idea' },
         { source: 'centro', target: 'flujo-video', label: 'proyecto' },
         ...videoWorkflowLinks(),
+        ...myArtifactLinks(),
       ],
     });
+    data.defaultsVersion = DEFAULTS_VERSION;
+    for (const node of data.nodes) node.pinned = PINNED_DEFAULTS.includes(node.id);
+    return data;
   }
 
   // Flujo de video sugerido: crear en Flow → editar/música en Filmora → publicar en redes.
@@ -145,6 +155,62 @@
       { source: 'flow', target: 'filmora', label: 'exportar a' },
       ...['tiktok', 'youtube', 'instagram', 'facebook'].map((id) => ({ source: 'filmora', target: id, label: 'publicar en' })),
     ];
+  }
+
+  // Mis artefactos publicados en Claude.
+  function myArtifactNodes(t) {
+    const n = (id, type, title, url, tags, description) => ({ id, type, title, url, tags, description, created: t, updated: t });
+    return [
+      n('art-autoprompt', 'artefacto', 'Charlie AutoPrompt', 'https://claude.ai/artifact/HysHZChPyfQRvQsXP3Nrkn', ['prompts', 'ia'],
+        'Mi generador de prompts. Lo uso para crear los prompts de mis videos en [[Flow]].'),
+      n('art-sala', 'artefacto', 'Sala de Guionistas', 'https://claude.ai/artifact/6R45q4RH3mi4owebPzdszE', ['guiones', 'video'],
+        'Donde escribo los guiones de mis videos.'),
+      n('art-afiliado', 'artefacto', 'Guionista de Afiliado', 'https://claude.ai/artifact/CVMgsP9W35MU3rRDJi2VDg', ['guiones', 'afiliados'],
+        'Guiones para videos de productos de afiliado.'),
+      n('art-belleza', 'artefacto', 'Guionista de Belleza', 'https://claude.ai/artifact/9eiDtzAwoRGzxqH3nznUD1', ['guiones', 'belleza'],
+        'Guiones para videos de belleza.'),
+      n('art-bloques', 'artefacto', 'Estudio de Bloques', 'https://claude.ai/artifact/87eurhyfYxfZnpXpA2ZUbX', [], ''),
+      n('roblox', 'proyecto', 'Juegos de Roblox', '', ['roblox', 'juegos'], 'Mis ideas y documentos de juegos.'),
+      n('art-granja-tycoon', 'artefacto', 'Granja Tycoon — Documento de Diseño', 'https://claude.ai/artifact/SKwqjamCZxird6p9gZ1xca', ['roblox'], ''),
+      n('art-granja-brainrot', 'artefacto', 'Granja Brainrot — Documento Base (Roblox)', 'https://claude.ai/artifact/Gn7NzaxW2ZGn2QfLET4jcA', ['roblox'], ''),
+    ];
+  }
+  function myArtifactLinks() {
+    return [
+      { source: 'art-autoprompt', target: 'flow', label: 'prompts para' },
+      { source: 'art-sala', target: 'art-autoprompt', label: 'guion → prompt' },
+      { source: 'art-afiliado', target: 'art-sala', label: 'parte de' },
+      { source: 'art-belleza', target: 'art-sala', label: 'parte de' },
+      { source: 'flujo-video', target: 'art-sala', label: '0. guion' },
+      { source: 'roblox', target: 'art-granja-tycoon', label: 'documento' },
+      { source: 'roblox', target: 'art-granja-brainrot', label: 'documento' },
+      { source: 'centro', target: 'roblox', label: 'proyecto' },
+      ...['art-autoprompt', 'art-sala', 'art-bloques', 'art-granja-tycoon', 'art-granja-brainrot']
+        .map((id) => ({ source: 'ej-art', target: id, label: '' })),
+      { source: 'ej-app', target: 'ej-art', label: 'creados con' },
+    ];
+  }
+
+  // Añade a un cerebro ya existente los nodos predeterminados que le falten (sin duplicar
+  // títulos) y las conexiones entre ellos. Devuelve cuántos nodos se añadieron.
+  function mergeDefaults(nodesFn, linksFn, pinNew) {
+    const t = now();
+    const existing = new Set(state.data.nodes.map((n) => n.id));
+    const titles = new Set(state.data.nodes.map((n) => norm(n.title)));
+    const added = nodesFn(t)
+      .filter((n) => !existing.has(n.id) && !titles.has(norm(n.title)))
+      .map((n) => ({ ...n, pinned: pinNew && PINNED_DEFAULTS.includes(n.id) }));
+    state.data.nodes.push(...added);
+    const ids = new Set(state.data.nodes.map((n) => n.id));
+    const linked = new Set(state.data.links.map((l) => [l.source, l.target].sort().join('|')));
+    for (const l of linksFn()) {
+      const key = [l.source, l.target].sort().join('|');
+      if (ids.has(l.source) && ids.has(l.target) && !linked.has(key) && !(existing.has(l.source) && existing.has(l.target))) {
+        state.data.links.push({ id: uid(), ...l });
+        linked.add(key);
+      }
+    }
+    return added.length;
   }
 
   // ---------- Estado ----------
@@ -315,6 +381,10 @@
         <button id="p-close" title="Cerrar (Esc)" aria-label="Cerrar">✕</button>
       </div>
       <input id="p-title" class="title-input" value="${esc(node.title)}" aria-label="Título" placeholder="Título">
+      <div class="row">
+        <a id="p-go" class="button primary open-big" target="_blank" rel="noopener" ${node.url ? '' : 'hidden'}>Abrir ↗</a>
+        <label class="pin"><input id="p-pinned" type="checkbox" ${node.pinned ? 'checked' : ''}> ⚡ Acceso rápido</label>
+      </div>
       <div class="field">
         <label for="p-url">Enlace, ruta o comando</label>
         <div class="row">
@@ -338,6 +408,22 @@
     renderConnections();
 
     const touch = () => { node.updated = now(); persist(); };
+    const syncGo = () => {
+      const go = $('#p-go');
+      go.hidden = !node.url;
+      go.textContent = `Abrir ${node.title || ''} ↗`;
+      if (node.url && !isLocalPath(node.url)) go.href = webHref(node.url);
+      else go.removeAttribute('href');
+    };
+    syncGo();
+    $('#p-go').addEventListener('click', (e) => {
+      if (isLocalPath(node.url)) { e.preventDefault(); openUrl(node.url); }
+    });
+    $('#p-pinned').addEventListener('change', (e) => {
+      node.pinned = e.target.checked;
+      touch();
+      renderLauncher();
+    });
     $('#p-type').addEventListener('change', (e) => {
       node.type = e.target.value;
       $('#p-dot').style.background = colorOf(node);
@@ -349,6 +435,8 @@
     $('#p-title').addEventListener('input', (e) => {
       node.title = e.target.value;
       touch();
+      syncGo();
+      if (node.pinned) renderLauncher();
       refreshGraph();
       renderListDebounced();
     });
@@ -356,6 +444,8 @@
       node.url = e.target.value.trim();
       $('#p-open').disabled = !node.url;
       touch();
+      syncGo();
+      if (node.pinned) renderLauncher();
     });
     $('#p-tags').addEventListener('input', (e) => {
       node.tags = e.target.value.split(',').map((s) => s.trim()).filter(Boolean);
@@ -503,11 +593,44 @@
       openLocal(target).catch((err) => alert(err.message));
       return;
     }
-    if (!/^[a-z][a-z0-9+.-]*:/i.test(target)) target = 'https://' + target;
-    window.open(target, '_blank', 'noopener');
+    window.open(webHref(target), '_blank', 'noopener');
   }
 
+  // ---------- Acceso rápido ----------
+  // Enlaces reales (<a>) en vez de window.open: un toque abre la app aunque el
+  // navegador bloquee ventanas emergentes.
+  function webHref(url) {
+    const u = url.trim();
+    return /^[a-z][a-z0-9+.-]*:/i.test(u) ? u : 'https://' + u;
+  }
+  function renderLauncher() {
+    const pinned = state.data.nodes.filter((n) => n.pinned);
+    $('#launcher').innerHTML = `<span class="launcher-label">⚡</span>` + (pinned.length
+      ? pinned.map((n) => {
+        const inner = `<span class="dot" style="background:${colorOf(n)}"></span>${esc(n.title)}`;
+        if (n.url && !isLocalPath(n.url)) {
+          return `<a class="launch" href="${esc(webHref(n.url))}" target="_blank" rel="noopener" title="Abrir ${esc(n.title)}">${inner} <span aria-hidden="true">↗</span></a>`;
+        }
+        return `<button class="launch" data-launch="${esc(n.id)}" title="${n.url ? 'Abrir ' + esc(n.title) : 'Falta el enlace: tócalo para añadirlo'}">${inner}${n.url ? ' <span aria-hidden="true">↗</span>' : ' <span class="muted">(sin enlace)</span>'}</button>`;
+      }).join('')
+      : '<span class="muted">Marca "⚡ Acceso rápido" en cualquier nodo para tenerlo aquí a un toque.</span>');
+  }
+  $('#launcher').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-launch]');
+    if (!btn) return;
+    const node = nodeById(btn.dataset.launch);
+    if (!node) return;
+    if (node.url) openUrl(node.url);
+    else {
+      select(node.id);
+      graph.centerOn(node.id);
+      const url = $('#p-url');
+      if (url) url.focus();
+    }
+  });
+
   function renderAll() {
+    renderLauncher();
     renderFilters();
     refreshGraph();
     renderList();
@@ -520,20 +643,10 @@
     addNode, persist, renderAll, select, openUrl, openLocal, isLocalPath,
     focus: (id) => { select(id); graph.centerOn(id); },
     addVideoWorkflow() {
-      const t = now();
-      const existing = new Set(state.data.nodes.map((n) => n.id));
-      const titles = new Set(state.data.nodes.map((n) => norm(n.title)));
-      const added = videoWorkflowNodes(t).filter((n) => !existing.has(n.id) && !titles.has(norm(n.title)));
-      state.data.nodes.push(...added);
-      const ids = new Set(state.data.nodes.map((n) => n.id));
-      for (const l of videoWorkflowLinks()) {
-        if (ids.has(l.source) && ids.has(l.target) && (existing.has(l.source) + existing.has(l.target) < 2)) {
-          state.data.links.push({ id: uid(), ...l });
-        }
-      }
+      const count = mergeDefaults(videoWorkflowNodes, videoWorkflowLinks, false);
       persist();
       renderAll();
-      return added.length;
+      return count;
     },
   };
 
@@ -617,6 +730,14 @@
     const raw = await Store.load();
     state.data = raw && Array.isArray(raw.nodes) ? normalize(raw) : seed();
     if (!raw) persist();
+    if (state.data.defaultsVersion < DEFAULTS_VERSION) {
+      mergeDefaults(myArtifactNodes, myArtifactLinks, true);
+      for (const node of state.data.nodes) {
+        if (PINNED_DEFAULTS.includes(node.id) && node.url) node.pinned = true;
+      }
+      state.data.defaultsVersion = DEFAULTS_VERSION;
+      persist();
+    }
     statusEl.textContent = Store.mode === 'archivo' ? 'Conectado a data/brain.json' : 'Guardando en este navegador';
     renderAll();
     setTimeout(() => graph.fit(), state.data.nodes.some((n) => n.x === undefined) ? 1200 : 50);
