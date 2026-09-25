@@ -93,6 +93,22 @@
     <p id="pub-status" class="help" role="status"></p>
   </dialog>
 
+  <dialog id="connect" aria-labelledby="cx-heading">
+    <div class="dialog-head">
+      <h2 id="cx-heading">🔗 Conectar</h2>
+      <button id="cx-close" aria-label="Cerrar">✕</button>
+    </div>
+    <p class="help">Toca todo lo que quieras conectar (puedes elegir varios). Tócalo otra vez para desconectarlo.</p>
+    <div class="cx-inputs">
+      <input id="cx-search" type="search" placeholder="Buscar o escribir uno nuevo…" autocomplete="off" aria-label="Buscar">
+      <input id="cx-label" placeholder="Relación (opcional): usa, prompts para…" aria-label="Relación">
+    </div>
+    <div id="cx-list" class="cx-list"></div>
+    <div class="dialog-foot">
+      <button id="cx-done" type="button" class="primary">Listo</button>
+    </div>
+  </dialog>
+
   <script src="graph.js"></script>
   <script src="app.js"></script>
   <script src="publish.js"></script>

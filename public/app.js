@@ -107,7 +107,7 @@
           'Este es el centro de tu segundo cerebro.\n\nCada cosa que usas o creas —apps, artefactos, proyectos, notas, enlaces, personas— es un nodo. Conéctalos entre sí para ver cómo se relaciona todo.\n\nEscribe [[Cómo usar Cerebro]] en cualquier descripción para crear una conexión automática.',
           { tags: ['inicio'] }),
         n('guia', 'nota', 'Cómo usar Cerebro',
-          '• Doble clic en un espacio vacío del grafo → nuevo nodo.\n• Clic en un nodo → editarlo en este panel.\n• Doble clic en un nodo → abre su enlace.\n• Pega una URL en cualquier parte → se guarda como enlace.\n• En "Conexiones" puedes enlazar este nodo con otro y ponerle una etiqueta.\n• Escribir [[Título de otro nodo]] también crea una conexión (línea discontinua).\n• Exporta a JSON para tener copias de seguridad.',
+          '• Doble clic en un espacio vacío del grafo → nuevo nodo.\n• Clic en un nodo → editarlo en este panel.\n• Doble clic en un nodo → abre su enlace.\n• Pega una URL en cualquier parte → se guarda como enlace.\n• Para conectar: toca un nodo → "🔗 Conectar con…" → toca los que quieras.\n• Escribir [[Título de otro nodo]] también crea una conexión (línea discontinua).\n• Exporta a JSON para tener copias de seguridad.',
           { tags: ['ayuda'] }),
         n('ej-app', 'app', 'Claude', 'Asistente con el que construyo cosas. Aquí nacen muchos de mis [[Artefactos]].', { url: 'https://claude.ai', tags: ['ia'] }),
         n('ej-art', 'artefacto', 'Artefactos', 'Páginas, herramientas y prototipos que he creado. Añade cada uno como un nodo y conéctalo al proyecto al que pertenece.'),
@@ -385,6 +385,7 @@
         <a id="p-go" class="button primary open-big" target="_blank" rel="noopener" ${node.url ? '' : 'hidden'}>Abrir ↗</a>
         <label class="pin"><input id="p-pinned" type="checkbox" ${node.pinned ? 'checked' : ''}> ⚡ Acceso rápido</label>
       </div>
+      <button id="p-link" class="connect-big">🔗 Conectar con…</button>
       <div class="field">
         <label for="p-url">Enlace, ruta o comando</label>
         <div class="row">
@@ -458,6 +459,7 @@
       renderConnectionsDebounced();
     });
     $('#p-open').addEventListener('click', () => openUrl(node.url));
+    $('#p-link').addEventListener('click', () => openConnectPicker(node.id));
     $('#p-close').addEventListener('click', () => select(null));
     $('#p-delete').addEventListener('click', () => {
       if (!confirm(`¿Eliminar "${node.title}" y sus conexiones?`)) return;
@@ -475,10 +477,6 @@
     if (!node || !box) return;
     const conns = connectionsOf(node.id);
     const missing = mentionsOf(node).filter((t) => !nodeByTitle(t));
-    const options = state.data.nodes
-      .filter((n) => n.id !== node.id)
-      .map((n) => `<option value="${esc(n.title)}"></option>`)
-      .join('');
 
     box.innerHTML = `
       <h3>Conexiones (${conns.length})</h3>
@@ -491,13 +489,7 @@
         </li>`).join('') || '<li class="conn-label">Sin conexiones todavía.</li>'}
       </ul>
       ${missing.length ? `<p class="help">Menciones sin nodo: ${missing.map((t) => `<button class="link" data-create="${esc(t)}">+ ${esc(t)}</button>`).join(' · ')}</p>` : ''}
-      <form class="connect-form" id="p-connect">
-        <input id="p-target" list="p-titles" placeholder="Conectar con…" aria-label="Nodo a conectar" required>
-        <input id="p-label" placeholder="Relación (opcional)" aria-label="Relación">
-        <button type="submit">Conectar</button>
-        <datalist id="p-titles">${options}</datalist>
-      </form>
-      <p class="help">Si el nodo no existe, se crea como nota.</p>`;
+      <button type="button" class="connect-big" id="p-link-2">🔗 Conectar con…</button>`;
 
     box.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => {
       select(b.dataset.goto);
@@ -517,27 +509,80 @@
       select(node.id);
       graph.centerOn(created.id);
     }));
-    $('#p-connect').addEventListener('submit', (ev) => {
-      ev.preventDefault();
-      const title = $('#p-target').value.trim();
-      if (!title) return;
-      let target = nodeByTitle(title);
-      if (target && target.id === node.id) return;
-      if (!target) target = addNode({ title, type: 'nota' });
-      const exists = state.data.links.some((l) =>
-        (l.source === node.id && l.target === target.id) || (l.source === target.id && l.target === node.id));
-      if (!exists) {
-        state.data.links.push({ id: uid(), source: node.id, target: target.id, label: $('#p-label').value.trim() });
-      }
-      node.updated = now();
-      persist();
-      renderFilters();
-      refreshGraph();
-      renderList();
-      renderConnections();
-      $('#p-target').focus();
-    });
+    $('#p-link-2').addEventListener('click', () => openConnectPicker(node.id));
   }
+
+  // ---------- Selector para conectar ----------
+  // Lista de todos los nodos: tocar uno lo conecta (o lo desconecta si ya lo estaba).
+  const connectDialog = $('#connect');
+  let connectFrom = null;
+
+  const linkBetween = (a, b) => state.data.links.find((l) =>
+    (l.source === a && l.target === b) || (l.source === b && l.target === a));
+
+  function openConnectPicker(id) {
+    const node = nodeById(id);
+    if (!node) return;
+    connectFrom = id;
+    $('#cx-heading').textContent = `🔗 Conectar «${node.title}» con…`;
+    $('#cx-search').value = '';
+    $('#cx-label').value = '';
+    renderConnectPicker();
+    connectDialog.showModal();
+  }
+
+  function renderConnectPicker() {
+    const node = nodeById(connectFrom);
+    if (!node) return;
+    const q = norm($('#cx-search').value);
+    const mentioned = new Set(allEdges().filter((e) => e.kind === 'mencion' && (e.source === node.id || e.target === node.id))
+      .map((e) => (e.source === node.id ? e.target : e.source)));
+    const items = state.data.nodes
+      .filter((n) => n.id !== node.id && (!q || norm(n.title).includes(q) || n.tags.some((t) => norm(t).includes(q))))
+      .sort((a, b) => a.title.localeCompare(b.title, 'es'));
+    const exact = q && state.data.nodes.some((n) => norm(n.title) === q);
+    $('#cx-list').innerHTML = items.map((n) => {
+      const link = linkBetween(node.id, n.id);
+      const on = !!link || mentioned.has(n.id);
+      return `<button type="button" class="cx-item${on ? ' on' : ''}" data-cx="${esc(n.id)}" ${!link && on ? 'disabled' : ''}>
+          <span class="dot" style="background:${colorOf(n)}"></span>
+          <span class="cx-title">${esc(n.title)}</span>
+          <span class="cx-state">${link ? '✓ conectado' : on ? '✓ por mención' : '+ conectar'}</span>
+        </button>`;
+    }).join('') + (q && !exact
+      ? `<button type="button" class="cx-item cx-new" data-cx-new="1"><span class="cx-title">+ Crear «${esc($('#cx-search').value.trim())}» y conectarlo</span></button>`
+      : '') || '<p class="muted">No hay más nodos. Escribe un nombre arriba para crear uno.</p>';
+  }
+
+  function afterConnectChange() {
+    const node = nodeById(connectFrom);
+    if (node) node.updated = now();
+    persist();
+    renderFilters();
+    refreshGraph();
+    renderList();
+    renderConnections();
+    renderConnectPicker();
+  }
+
+  $('#cx-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || !connectFrom) return;
+    const label = $('#cx-label').value.trim();
+    if (btn.dataset.cxNew) {
+      const created = addNode({ title: $('#cx-search').value.trim(), type: 'nota' });
+      state.data.links.push({ id: uid(), source: connectFrom, target: created.id, label });
+      $('#cx-search').value = '';
+    } else {
+      const link = linkBetween(connectFrom, btn.dataset.cx);
+      if (link) state.data.links = state.data.links.filter((l) => l !== link);
+      else state.data.links.push({ id: uid(), source: connectFrom, target: btn.dataset.cx, label });
+    }
+    afterConnectChange();
+  });
+  $('#cx-search').addEventListener('input', renderConnectPicker);
+  $('#cx-done').addEventListener('click', () => connectDialog.close());
+  $('#cx-close').addEventListener('click', () => connectDialog.close());
   const renderConnectionsDebounced = debounce(renderConnections, 300);
   const renderListDebounced = debounce(renderList, 300);
 

@@ -210,8 +210,6 @@ textarea { resize: vertical; min-height: 130px; }
 .conn-list .conn-label { font-size: 12px; color: var(--muted); }
 .conn-list .remove { background: none; border: none; color: var(--muted); padding: 0 4px; }
 .conn-list .remove:hover { color: var(--danger); }
-.connect-form { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.connect-form button { grid-column: span 2; }
 .meta { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border); }
 
 @media (max-width: 900px) {
@@ -232,7 +230,7 @@ textarea { resize: vertical; min-height: 130px; }
 }
 
 /* Publicador de video */
-dialog#publish {
+dialog#publish, dialog#connect {
   width: min(560px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   overflow-y: auto;
@@ -242,7 +240,7 @@ dialog#publish {
   border-radius: 14px;
   padding: 18px 20px;
 }
-dialog#publish::backdrop { background: rgb(0 0 0 / 0.55); }
+dialog#publish::backdrop, dialog#connect::backdrop { background: rgb(0 0 0 / 0.55); }
 dialog#publish .field { margin-top: 10px; }
 dialog#publish h3 {
   font-size: 12px;
@@ -253,6 +251,7 @@ dialog#publish h3 {
 }
 .dialog-head { display: flex; justify-content: space-between; align-items: center; }
 .dialog-head h2 { margin: 0; font-size: 18px; }
+.dialog-head { gap: 8px; }
 .drop {
   display: grid;
   place-items: center;
@@ -317,3 +316,22 @@ a.button { text-decoration: none; text-align: center; }
 .button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .pin { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; cursor: pointer; }
 .pin input { width: auto; margin: 0; }
+
+/* Conectar */
+.connect-big { width: 100%; padding: 9px 12px; font-weight: 600; }
+.cx-inputs { display: grid; gap: 8px; margin: 10px 0; }
+.cx-list { display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow-y: auto; }
+.cx-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+}
+.cx-item .cx-title { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.cx-item .cx-state { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.cx-item.on { border-color: var(--accent); }
+.cx-item.on .cx-state { color: var(--accent); }
+.cx-item:disabled { cursor: default; opacity: 0.7; }
+.cx-new { border-style: dashed; }

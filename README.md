@@ -22,7 +22,7 @@ Abre **http://localhost:4321**. Todo se guarda en `data/brain.json` (y una copia
 | --- | --- |
 | Crear un nodo | **+ Nuevo**, tecla `N`, o doble clic en un espacio vacío. Si hay un nodo seleccionado, el nuevo nace conectado a él. |
 | Editar | Clic en un nodo: se abre el panel de la derecha. |
-| Conectar | En el panel, **Conexiones → Conectar con…** (con una relación opcional, p. ej. "usa", "publicado en"). |
+| Conectar | Toca un nodo → **🔗 Conectar con…** → toca en la lista todo lo que quieras conectar (tocar otra vez lo desconecta). Puedes escribir una relación opcional, p. ej. "usa" o "prompts para". |
 | Conexión rápida | Escribe `[[Título de otro nodo]]` en la descripción (se ve como línea discontinua). |
 | Abrir | Doble clic en el nodo o botón **Abrir**. Funciona con URLs y con rutas locales (apps, carpetas, archivos). |
 | Guardar un enlace | Pega una URL en cualquier parte de la página. |
