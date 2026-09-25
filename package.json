@@ -1,0 +1,13 @@
+{
+  "name": "cerebro",
+  "version": "1.0.0",
+  "description": "Un segundo cerebro local: conecta tus apps, artefactos, proyectos, notas y enlaces en un grafo.",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

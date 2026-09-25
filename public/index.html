@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cerebro</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span aria-hidden="true">🧠</span> Cerebro</div>
+    <div class="search">
+      <input id="search" type="search" placeholder="Buscar…  ( / )" autocomplete="off" aria-label="Buscar">
+    </div>
+    <div class="actions">
+      <button id="btn-publish" class="primary" title="Subir un video y publicarlo en tus redes">📤 Publicar video</button>
+      <button id="btn-new" title="Nuevo nodo (N)">+ Nuevo</button>
+      <button id="btn-fit" title="Ver todo (F)">Ver todo</button>
+      <button id="btn-layout" title="Reorganizar el grafo">Reorganizar</button>
+      <button id="btn-export" title="Descargar una copia en JSON">Exportar</button>
+      <label class="button" title="Cargar un JSON exportado">
+        Importar<input id="file-import" type="file" accept="application/json,.json" hidden>
+      </label>
+    </div>
+  </header>
+
+  <div class="filters" id="filters" role="toolbar" aria-label="Filtrar por tipo"></div>
+
+  <main class="layout">
+    <nav class="sidebar" aria-label="Lista de nodos">
+      <div class="sidebar-head">
+        <span id="stats"></span>
+      </div>
+      <ul id="node-list"></ul>
+    </nav>
+
+    <section class="stage">
+      <canvas id="graph" aria-label="Grafo de conexiones"></canvas>
+      <div class="hint" id="hint">
+        Doble clic en el vacío: nuevo nodo · Arrastra: mover · Rueda: zoom · Doble clic en un nodo: abrir su enlace · Pega una URL para guardarla
+      </div>
+      <div class="save-status" id="save-status"></div>
+    </section>
+
+    <aside class="panel" id="panel" hidden></aside>
+  </main>
+
+  <dialog id="publish" aria-labelledby="pub-heading">
+    <div class="dialog-head">
+      <h2 id="pub-heading">📤 Publicar video</h2>
+      <button id="pub-close" aria-label="Cerrar">✕</button>
+    </div>
+
+    <label id="pub-drop" class="drop">
+      <input id="pub-file" type="file" accept="video/*" hidden>
+      <span id="pub-drop-label">Arrastra aquí tu video o haz clic para elegirlo</span>
+    </label>
+    <video id="pub-preview" controls hidden></video>
+
+    <div class="field">
+      <label for="pub-title">Título</label>
+      <input id="pub-title" placeholder="Nombre del video">
+    </div>
+    <div class="field">
+      <label for="pub-caption">Descripción</label>
+      <textarea id="pub-caption" rows="3" placeholder="Lo que escribirás al publicar"></textarea>
+    </div>
+    <div class="field">
+      <label for="pub-tags">Hashtags</label>
+      <input id="pub-tags" placeholder="#viral #fyp #ia">
+    </div>
+    <div class="field">
+      <label for="pub-music">Música a añadir (nota para ti)</label>
+      <input id="pub-music" placeholder="Canción o estilo de música">
+    </div>
+
+    <div class="step">
+      <button id="pub-edit" type="button">✂️ Editar en Filmora</button>
+      <p class="help" id="pub-edit-help"></p>
+    </div>
+
+    <h3>Publicar en</h3>
+    <div id="pub-targets" class="targets"></div>
+    <button id="pub-add-workflow" type="button" class="link" hidden>+ Añadir Flow, Filmora, TikTok, YouTube, Instagram y Facebook</button>
+
+    <div class="dialog-foot">
+      <button id="pub-reset" type="button">Limpiar</button>
+      <button id="pub-go" type="button" class="primary">🚀 Publicar</button>
+    </div>
+    <div id="pub-links" class="pub-links"></div>
+    <p id="pub-status" class="help" role="status"></p>
+  </dialog>
+
+  <script src="graph.js"></script>
+  <script src="app.js"></script>
+  <script src="publish.js"></script>
+</body>
+</html>
