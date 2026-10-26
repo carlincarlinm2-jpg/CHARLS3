@@ -91,6 +91,7 @@
   // Sin voz, el ritmo sale de la lectura: palabras largas y signos de pausa duran más.
   function tiempos(plan) {
     let t = 0;
+    plan.escenas.forEach((s, i) => { s.anterior = plan.escenas[i - 1] || null; });
     for (const s of plan.escenas) {
       s.palabras = palabras(s.texto);
       let d = 0.25;
@@ -438,9 +439,13 @@
     const i = escenaEn(plan, t);
     const s = plan.escenas[i];
     const local = t - s.inicio;
-    if (i > 0 && local < TRANSICION) {
+    const prev = plan.escenas[i - 1];
+    const def = escenas[s.tipo] || escenas.objeto;
+    // Escenas que continúan el mismo mundo (p. ej. la misma calle 3D) se unen con
+    // un movimiento de cámara en lugar de un fundido.
+    const enlazada = prev && def.enlaza && def.enlaza(prev, s);
+    if (prev && !enlazada && local < TRANSICION) {
       const k = easeInOut(local / TRANSICION);
-      const prev = plan.escenas[i - 1];
       dibujarEscena(ctx, E, prev, prev.dur + local, 1 - k, 1 + 0.05 * k);
       dibujarEscena(ctx, E, s, local, k, lerp(1.06, 1, k));
     } else {

@@ -41,6 +41,37 @@ Envíaselo a esa persona a la que *nunca* le pican… mientras a ti te comen viv
 `,
   },
   {
+    nombre: 'AirTag en 3D (cámara en movimiento)',
+    guion: `# AirTag: no tiene GPS (3D)
+estilo: violeta
+marca: @tuusuario
+
+[3d: airtag | camara: orbita]
+¿Sabías que un AirTag *no tiene* GPS?
+
+[3d: calle | foco: maleta | camara: subir]
+Y aun así, si pierdes tu maleta en otro país…
+
+[3d: telefono | camara: acercar | objeto: Maleta | lugar: Rua Augusta, Lisboa]
+tu móvil te dice en qué *calle* está.
+
+[3d: calle | foco: persona | efecto: bluetooth | camara: seguir | etiqueta: un desconocido]
+Su truco: lanza un mensaje por *Bluetooth* a cualquier iPhone que pase cerca.
+
+[3d: calle | foco: cielo | efecto: satelites | camara: subir]
+Y ese iPhone sí tiene *GPS*: envía su ubicación a la red de Apple.
+
+[objeto: 🔒 | etiqueta: cifrado | efecto: escaner]
+Todo va *cifrado*: ni el desconocido ni Apple saben dónde está. Solo tú.
+
+[globo | pines: 16 | etiqueta: millones de iPhones]
+Y esto lo hacen, sin saberlo, millones de iPhones por todo el *mundo*.
+
+[3d: calle | foco: calle | camara: alejar]
+Y piénsalo: tu iPhone, en tu bolsillo, quizá está ayudando *ahora* a encontrar la maleta de alguien.
+`,
+  },
+  {
     nombre: 'AirTag: no tiene GPS',
     guion: `# ¿Cómo sabe un AirTag dónde está si no tiene GPS?
 estilo: violeta

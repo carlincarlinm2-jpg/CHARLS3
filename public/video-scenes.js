@@ -410,6 +410,18 @@
     },
   });
 
+  // Los mundos 3D viven en video-3d.js (módulo con Three.js), que se carga aparte
+  // y rellena Fabrica.motor3d; mientras tanto se muestra un aviso.
+  F.escena('3d', {
+    descripcion: 'Mundo 3D con cámara en movimiento.',
+    ejemplo: '[3d: calle | foco: maleta | camara: subir]',
+    enlaza: (a, b) => !!(F.motor3d && F.motor3d.enlaza(a, b)),
+    dibujar(ctx, E, s, t, p) {
+      if (F.motor3d) return F.motor3d.dibujar(ctx, E, s, t, p);
+      E.texto(F.error3d || 'Cargando 3D…', CX, CY, { tam: 48, color: F.error3d ? E.c.peligro : E.c.tenue });
+    },
+  });
+
   F.escena('cierre', {
     descripcion: 'Final para compartir: icono que late y botón de seguir con tu marca.',
     ejemplo: '[cierre: 📤 | etiqueta: sígueme para más]',

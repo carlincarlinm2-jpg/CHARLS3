@@ -67,9 +67,18 @@
     </section>
   </main>
 
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/three.module.min.js",
+        "three/addons/": "./vendor/three/addons/"
+      }
+    }
+  </script>
   <script src="video-engine.js"></script>
   <script src="video-scenes.js"></script>
   <script src="video-ejemplos.js"></script>
   <script src="video-app.js"></script>
+  <script type="module" src="video-3d.js"></script>
 </body>
 </html>

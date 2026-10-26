@@ -92,11 +92,16 @@
   });
 
   // Catálogo de escenas generado desde el registro: una escena nueva aparece sola aquí.
-  $('#catalogo').innerHTML = Object.entries(F.escenas).map(([tipo, def]) => `<div class="item">
-      <code>${esc(def.ejemplo || `[${tipo}]`)}</code>
-      <p>${esc(def.descripcion || '')}</p>
-      <button data-tipo="${esc(tipo)}" title="Añadir al final del guion">+ Insertar</button>
-    </div>`).join('');
+  function catalogo() {
+    $('#catalogo').innerHTML = Object.entries(F.escenas).map(([tipo, def]) => `<div class="item">
+        <code>${esc(def.ejemplo || `[${tipo}]`)}</code>
+        <p>${esc(def.descripcion || '')}</p>
+        <button data-tipo="${esc(tipo)}" title="Añadir al final del guion">+ Insertar</button>
+      </div>`).join('');
+  }
+  catalogo();
+  // El motor 3D se carga después (es un módulo): al estar listo, se redibuja todo.
+  window.addEventListener('fabrica3d', () => { catalogo(); pintar(); });
   $('#catalogo').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-tipo]');
     if (!b) return;

@@ -72,7 +72,19 @@ La persona favorita atraía *cien veces* más mosquitos.
 - Al inicio: `estilo:` (neon, magma, menta, violeta), `marca:` y `velocidad:` (1 = normal, más alto = más rápido).
 - Cualquier escena acepta `duracion: 4`.
 
-Escenas incluidas: `titulo`, `objeto` (efectos `orbita`, `escaner`, `pulso`), `numero`, `vs`, `lista`, `mito`, `barras`, `globo` y `cierre`. La propia página trae el catálogo con ejemplos y tres guiones de muestra.
+Escenas incluidas: `titulo`, `objeto` (efectos `orbita`, `escaner`, `pulso`), `numero`, `vs`, `lista`, `mito`, `barras`, `globo`, `cierre` y `3d`. La propia página trae el catálogo con ejemplos y guiones de muestra.
+
+### Escenas 3D con cámara en movimiento
+
+`[3d: mundo | foco: … | camara: … | efecto: …]` dibuja un mundo 3D (Three.js, incluido en `public/vendor/three`, sin internet):
+
+| Mundo | foco | efecto |
+| --- | --- | --- |
+| `calle` — calle empedrada de noche, gente caminando, maleta | `maleta`, `persona`, `calle`, `cielo` | `bluetooth`, `satelites` |
+| `telefono` — iPhone con mapa, pin y notificación (`objeto:`, `lugar:`) | `telefono` | |
+| `airtag` — AirTag que se abre en sus piezas | `airtag` | |
+
+Movimientos de `camara`: `fija`, `orbita`, `acercar`, `alejar`, `subir`, `bajar`, `seguir`. Si dos escenas seguidas usan el mismo mundo, no hay corte: la cámara viaja de un punto a otro, como en los videos hechos en 3D. Mira el ejemplo **AirTag en 3D**.
 
 **🎵 Música** añade una pista de fondo (se repite y se desvanece al final). **⬇ Exportar video** graba el video en tiempo real (MP4 en Chrome/Edge/Safari, WebM en Firefox): no cambies de pestaña mientras graba. Luego súbelo con **📤 Publicar video**.
 
@@ -94,7 +106,7 @@ Fabrica.escena('miescena', {
 Fabrica.estilo('miestilo', { nombre: 'Mi estilo', fondo1: '#000000', /* …misma paleta que "neon" */ });
 ```
 
-La escena aparece sola en el catálogo de la página.
+La escena aparece sola en el catálogo de la página. Los mundos 3D están en `public/video-3d.js` y se añaden igual, con `mundo('nombre', { descripcion, ejemplo, crear })`: `crear()` arma la escena de Three.js y devuelve sus `objetivos` (a dónde puede mirar la cámara) y una función `actualizar()` para animarla.
 
 ## Seguridad
 
@@ -111,7 +123,9 @@ public/graph.js    motor del grafo (fuerzas + canvas)
 public/app.js      datos, panel, búsqueda, guardado
 public/publish.js  publicador de video
 public/video.html  Fábrica de videos (video-engine.js motor, video-scenes.js escenas
-                   y estilos, video-ejemplos.js guiones, video-app.js interfaz)
+                   y estilos, video-3d.js mundos 3D, video-ejemplos.js guiones,
+                   video-app.js interfaz)
+public/vendor/     Three.js (licencia MIT) para las escenas 3D
 data/              tus datos (ignorados por git)
 ```
 
