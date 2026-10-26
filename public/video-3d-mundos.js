@@ -617,9 +617,9 @@ mundo('dormitorio', {
         const inicioProta = (c.find((x) => normal(x.op.foco) === 'mosquito') || c[0]).inicio;
         const k = suave((tAbs - inicioProta) / 5);
         posProta.set(
-          lerp(1.6, blanco.x + 0.05, k) + Math.sin(tAbs * 2.1) * 0.1 * (1 - k),
-          lerp(1.5, blanco.y + 0.1, k) + Math.sin(tAbs * 3.3) * 0.06,
-          lerp(1.3, blanco.z, k),
+          lerp(0.4, blanco.x + 0.05, k) + Math.sin(tAbs * 2.1) * 0.1 * (1 - k),
+          lerp(1.3, blanco.y + 0.1, k) + Math.sin(tAbs * 3.3) * 0.06,
+          lerp(1.6, blanco.z, k),
         );
         protagonista.position.copy(posProta);
         protagonista.lookAt(blanco);
@@ -652,7 +652,7 @@ mundo('estudio', {
     escena.fog = new THREE.Fog(fondo, 12, 34);
     escena.environment = entorno;
     escena.add(new THREE.HemisphereLight('#7fa0ff', '#0a0a14', 0.6));
-    const clave = new THREE.SpotLight('#ffffff', 45, 30, 0.5, 0.6, 1.4);
+    const clave = new THREE.SpotLight('#ffffff', 26, 30, 0.5, 0.8, 1.4);
     clave.position.set(4, 9, 6);
     escena.add(clave);
     const contra = new THREE.DirectionalLight('#38c8ff', 2.2);
