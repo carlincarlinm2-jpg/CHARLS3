@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fábrica de videos</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+  <link rel="stylesheet" href="video.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="index.html" title="Volver al grafo">← Cerebro</a>
+    <div class="brand"><span aria-hidden="true">🎬</span> Fábrica de videos</div>
+    <div class="actions">
+      <label>Ejemplo
+        <select id="ejemplo"><option value="">Elegir…</option></select>
+      </label>
+      <label>Estilo
+        <select id="estilo"></select>
+      </label>
+      <label class="button" title="Música de fondo (opcional). Se repite si es más corta que el video.">
+        🎵 <span id="musica-nombre">Música</span>
+        <input id="musica" type="file" accept="audio/*" hidden>
+      </label>
+      <button id="quitar-musica" hidden title="Quitar la música">✕</button>
+      <button id="exportar" class="primary">⬇ Exportar video</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="editor">
+      <textarea id="guion" spellcheck="true" aria-label="Guion del video"></textarea>
+      <ul id="avisos" class="avisos"></ul>
+
+      <h3>Escenas <span id="resumen" class="muted"></span></h3>
+      <ol id="escenas" class="escenas"></ol>
+
+      <details class="ayuda" open>
+        <summary>Cómo escribir el guion</summary>
+        <ul>
+          <li><code>[tipo: valor | opción: valor]</code> empieza una escena. Las líneas de abajo son sus subtítulos.</li>
+          <li>Pon entre <code>*asteriscos*</code> las palabras que quieras resaltar con recuadro.</li>
+          <li>Al inicio puedes poner <code>estilo:</code>, <code>marca: @tuusuario</code> y <code>velocidad: 1.2</code> (más alto = subtítulos más rápidos).</li>
+          <li>Cualquier escena acepta <code>duracion: 4</code> para fijar sus segundos.</li>
+          <li><code>#</code> al inicio de una línea es el título (nombre del archivo) y <code>//</code> es un comentario.</li>
+        </ul>
+        <h4>Tipos de escena</h4>
+        <div id="catalogo" class="catalogo"></div>
+      </details>
+    </section>
+
+    <section class="preview">
+      <div class="marco">
+        <canvas id="lienzo" aria-label="Vista previa del video"></canvas>
+      </div>
+      <div class="controles">
+        <button id="play" title="Reproducir / pausar (espacio)">▶</button>
+        <input id="tiempo" type="range" min="0" max="1" step="0.01" value="0" aria-label="Posición">
+        <span id="reloj" class="reloj">0:00 / 0:00</span>
+      </div>
+      <p id="estado" class="estado"></p>
+      <div id="resultado" class="resultado" hidden>
+        <video id="resultado-video" controls playsinline></video>
+        <a id="descargar" class="button primary" download>⬇ Descargar de nuevo</a>
+        <p class="muted">Para subirlo a tus redes usa <b>📤 Publicar video</b> en Cerebro.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="video-engine.js"></script>
+  <script src="video-scenes.js"></script>
+  <script src="video-ejemplos.js"></script>
+  <script src="video-app.js"></script>
+</body>
+</html>
