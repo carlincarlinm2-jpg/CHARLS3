@@ -198,40 +198,148 @@
     audio.createMediaElementSource(el).connect(ganancia);
     ganancia.connect(audio.destination);
     ganancia.connect(destino);
-    musica = { url, el, ganancia, destino };
+    musica = { url, el, ganancia, destino, archivo };
     $('#musica-nombre').textContent = archivo.name.length > 18 ? archivo.name.slice(0, 16) + '…' : archivo.name;
     $('#quitar-musica').hidden = false;
   });
   $('#quitar-musica').addEventListener('click', quitarMusica);
 
   // ---------- Exportar ----------
+  //
+  // Preferido: cuadro por cuadro con WebCodecs. No se pierde ningún cuadro aunque la
+  // escena 3D sea pesada, con buena tarjeta gráfica va más rápido que el tiempo real y
+  // siempre sale MP4. Si el navegador no lo tiene, se graba en tiempo real.
 
+  let cancelar = false;
   let grabadora = null;
   let trozos = [];
 
-  function formato() {
-    const opciones = [
-      'video/mp4;codecs=avc1.640028,mp4a.40.2',
-      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
-      'video/mp4',
-      'video/webm;codecs=vp9,opus',
-      'video/webm;codecs=vp8,opus',
-      'video/webm',
-    ];
-    return opciones.find((m) => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+  function nombreArchivo() {
+    return (plan.titulo || 'video').normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'video';
   }
 
   function bloquear(si) {
     grabando = si;
-    for (const id of ['#exportar', '#play', '#tiempo', '#guion', '#ejemplo', '#estilo', '#musica', '#quitar-musica']) $(id).disabled = si;
+    for (const id of ['#play', '#tiempo', '#guion', '#ejemplo', '#estilo', '#musica', '#quitar-musica', '#calidad']) $(id).disabled = si;
+    $('#exportar').textContent = si ? '✕ Cancelar' : '⬇ Exportar video';
+    if (F.motor3d) F.motor3d.ponerEscala(si ? 1 : calidad());
   }
 
-  $('#exportar').addEventListener('click', () => {
-    if (!plan.total) return estado('Escribe un guion primero.', true);
-    const tipo = formato();
-    if (!tipo) return estado('Tu navegador no puede grabar video. Prueba con Chrome, Edge o Firefox actualizados.', true);
+  function entregar(blob, ext) {
+    const nombre = nombreArchivo();
+    const url = URL.createObjectURL(blob);
+    const enlace = $('#descargar');
+    if (enlace.href.startsWith('blob:')) URL.revokeObjectURL(enlace.href);
+    enlace.href = url;
+    enlace.download = `${nombre}.${ext}`;
+    $('#resultado-video').src = url;
+    $('#resultado').hidden = false;
+    enlace.click();
+    estado(ext === 'mp4'
+      ? `✅ Listo: ${nombre}.mp4 (${(blob.size / 1048576).toFixed(1)} MB)`
+      : `✅ Listo: ${nombre}.webm. Tu navegador no graba MP4; TikTok y YouTube aceptan WebM, o conviértelo en tu editor.`);
+  }
 
-    pausar();
+  async function configVideo() {
+    if (!window.VideoEncoder || !window.Mp4Muxer) return null;
+    for (const [codec, caja] of [['avc1.640034', 'avc'], ['avc1.4d0034', 'avc'], ['vp09.00.40.08', 'vp9'], ['av01.0.08M.08', 'av1']]) {
+      const config = { codec, width: F.W, height: F.H, bitrate: 14e6, framerate: F.FPS };
+      try {
+        if ((await VideoEncoder.isConfigSupported(config)).supported) return { config, caja };
+      } catch (e) { /* códec no disponible: probar el siguiente */ }
+    }
+    return null;
+  }
+
+  async function configAudio(muestras, canales) {
+    if (!window.AudioEncoder) return null;
+    for (const [codec, caja] of [['mp4a.40.2', 'aac'], ['opus', 'opus']]) {
+      const config = { codec, sampleRate: muestras, numberOfChannels: canales, bitrate: 192000 };
+      try {
+        if ((await AudioEncoder.isConfigSupported(config)).supported) return { config, caja };
+      } catch (e) { /* probar el siguiente */ }
+    }
+    return null;
+  }
+
+  async function exportarCuadros(video) {
+    let pista = null;
+    let audioCfg = null;
+    if (musica) {
+      const datos = await audio.decodeAudioData(await musica.archivo.arrayBuffer());
+      audioCfg = await configAudio(datos.sampleRate, Math.min(2, datos.numberOfChannels));
+      pista = audioCfg ? datos : null;
+    }
+    const muxer = new Mp4Muxer.Muxer({
+      target: new Mp4Muxer.ArrayBufferTarget(),
+      video: { codec: video.caja, width: F.W, height: F.H, frameRate: F.FPS },
+      audio: pista ? { codec: audioCfg.caja, sampleRate: pista.sampleRate, numberOfChannels: audioCfg.config.numberOfChannels } : undefined,
+      fastStart: 'in-memory',
+    });
+    let fallo = null;
+    const ve = new VideoEncoder({ output: (c, meta) => muxer.addVideoChunk(c, meta), error: (e) => { fallo = e; } });
+    ve.configure(video.config);
+    const n = Math.ceil(plan.total * F.FPS);
+    const inicio = performance.now();
+    for (let i = 0; i < n; i++) {
+      if (cancelar) { ve.close(); return null; }
+      if (fallo) throw fallo;
+      t = i / F.FPS;
+      F.dibujar(ctx, plan, t);
+      const cuadro = new VideoFrame(lienzo, { timestamp: Math.round(i * 1e6 / F.FPS), duration: Math.round(1e6 / F.FPS) });
+      ve.encode(cuadro, { keyFrame: i % (F.FPS * 2) === 0 });
+      cuadro.close();
+      while (ve.encodeQueueSize > 6) await new Promise((r) => setTimeout(r, 2));
+      if (i % 15 === 0) {
+        const pasado = (performance.now() - inicio) / 1000;
+        const falta = i ? pasado / i * (n - i) : 0;
+        estado(`⏳ Exportando… ${Math.round(i / n * 100)} %${i > 30 ? ` · faltan ~${mmss(falta)}` : ''}`);
+        $('#tiempo').value = t;
+        await new Promise((r) => setTimeout(r));
+      }
+    }
+    await ve.flush();
+    ve.close();
+    if (pista) {
+      const ae = new AudioEncoder({ output: (c, meta) => muxer.addAudioChunk(c, meta), error: (e) => { fallo = e; } });
+      ae.configure(audioCfg.config);
+      const sr = pista.sampleRate;
+      const canales = audioCfg.config.numberOfChannels;
+      const total = Math.round(plan.total * sr);
+      const fuente = Array.from({ length: canales }, (_, c) => pista.getChannelData(Math.min(c, pista.numberOfChannels - 1)));
+      // La música se repite si es corta y se desvanece en los últimos 1.5 s.
+      for (let ini = 0; ini < total; ini += sr) {
+        const len = Math.min(sr, total - ini);
+        const datos = new Float32Array(len * canales);
+        for (let c = 0; c < canales; c++) {
+          for (let j = 0; j < len; j++) {
+            const k = ini + j;
+            const fade = Math.min(1, (total - k) / (1.5 * sr));
+            datos[c * len + j] = fuente[c][k % pista.length] * fade;
+          }
+        }
+        const trozo = new AudioData({ format: 'f32-planar', sampleRate: sr, numberOfFrames: len, numberOfChannels: canales, timestamp: Math.round(ini * 1e6 / sr), data: datos });
+        ae.encode(trozo);
+        trozo.close();
+      }
+      await ae.flush();
+      ae.close();
+    }
+    if (fallo) throw fallo;
+    muxer.finalize();
+    return new Blob([muxer.target.buffer], { type: 'video/mp4' });
+  }
+
+  function formatoTiempoReal() {
+    const opciones = [
+      'video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4',
+      'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm',
+    ];
+    return opciones.find((m) => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+  }
+
+  function exportarTiempoReal(tipo) {
     const flujo = lienzo.captureStream(F.FPS);
     if (musica) {
       audio.resume();
@@ -246,14 +354,22 @@
     trozos = [];
     grabadora = new MediaRecorder(flujo, { mimeType: tipo, videoBitsPerSecond: 12e6 });
     grabadora.ondataavailable = (e) => { if (e.data.size) trozos.push(e.data); };
-    grabadora.onstop = () => terminarArchivo(tipo, flujo);
-    bloquear(true);
-    $('#resultado').hidden = true;
+    grabadora.onstop = () => {
+      flujo.getVideoTracks().forEach((p) => p.stop());
+      if (musica) {
+        musica.ganancia.gain.cancelScheduledValues(audio.currentTime);
+        musica.ganancia.gain.setValueAtTime(1, audio.currentTime);
+      }
+      if (!cancelar) entregar(new Blob(trozos, { type: tipo.split(';')[0] }), tipo.startsWith('video/mp4') ? 'mp4' : 'webm');
+      else estado('Exportación cancelada.');
+      grabadora = null;
+      bloquear(false);
+    };
     estado('🔴 Grabando en tiempo real… no cambies de pestaña ni minimices la ventana.');
     t = 0;
     grabadora.start(500);
     reproducir();
-  });
+  }
 
   function terminarGrabacion() {
     reproduciendo = false;
@@ -263,30 +379,49 @@
     setTimeout(() => grabadora && grabadora.state !== 'inactive' && grabadora.stop(), 300);
   }
 
-  function terminarArchivo(tipo, flujo) {
-    flujo.getVideoTracks().forEach((p) => p.stop());
-    if (musica) {
-      musica.ganancia.gain.cancelScheduledValues(audio.currentTime);
-      musica.ganancia.gain.setValueAtTime(1, audio.currentTime);
+  $('#exportar').addEventListener('click', async () => {
+    if (grabando) {
+      cancelar = true;
+      if (grabadora) terminarGrabacion();
+      return;
     }
-    const blob = new Blob(trozos, { type: tipo.split(';')[0] });
-    const ext = tipo.startsWith('video/mp4') ? 'mp4' : 'webm';
-    const nombre = (plan.titulo || 'video').normalize('NFD').replace(/[̀-ͯ]/g, '')
-      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'video';
-    const url = URL.createObjectURL(blob);
-    const enlace = $('#descargar');
-    if (enlace.href.startsWith('blob:')) URL.revokeObjectURL(enlace.href);
-    enlace.href = url;
-    enlace.download = `${nombre}.${ext}`;
-    $('#resultado-video').src = url;
-    $('#resultado').hidden = false;
-    enlace.click();
+    if (!plan.total) return estado('Escribe un guion primero.', true);
+    pausar();
+    cancelar = false;
+    $('#resultado').hidden = true;
+    bloquear(true);
+    const video = await configVideo();
+    if (!video) {
+      const tipo = formatoTiempoReal();
+      if (!tipo) {
+        bloquear(false);
+        return estado('Tu navegador no puede grabar video. Prueba con Chrome, Edge o Firefox actualizados.', true);
+      }
+      return exportarTiempoReal(tipo);
+    }
+    try {
+      const blob = await exportarCuadros(video);
+      if (blob) entregar(blob, 'mp4');
+      else estado('Exportación cancelada.');
+    } catch (err) {
+      console.error(err);
+      estado(`No se pudo exportar: ${err.message}`, true);
+    }
     bloquear(false);
-    estado(ext === 'mp4'
-      ? `✅ Listo: ${nombre}.mp4 (${(blob.size / 1048576).toFixed(1)} MB)`
-      : `✅ Listo: ${nombre}.webm. Tu navegador no graba MP4; TikTok y YouTube aceptan WebM, o conviértelo en tu editor.`);
-    grabadora = null;
-  }
+    irA(0);
+  });
+
+  // ---------- Calidad de la vista previa ----------
+
+  const CLAVE_CALIDAD = 'fabrica.calidad';
+  function calidad() { return parseFloat($('#calidad').value) || 0.6; }
+  try { $('#calidad').value = localStorage.getItem(CLAVE_CALIDAD) || '0.6'; } catch (e) { /* sin almacenamiento */ }
+  $('#calidad').addEventListener('change', () => {
+    try { localStorage.setItem(CLAVE_CALIDAD, $('#calidad').value); } catch (e) { /* sin almacenamiento */ }
+    if (F.motor3d) F.motor3d.ponerEscala(calidad());
+    pintar();
+  });
+  window.addEventListener('fabrica3d', () => { if (F.motor3d) F.motor3d.ponerEscala(calidad()); pintar(); });
 
   // ---------- Inicio ----------
 

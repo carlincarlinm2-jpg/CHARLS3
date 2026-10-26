@@ -23,6 +23,13 @@
         <input id="musica" type="file" accept="audio/*" hidden>
       </label>
       <button id="quitar-musica" hidden title="Quitar la música">✕</button>
+      <label title="Calidad del 3D en la vista previa. La exportación siempre usa la máxima.">Vista previa
+        <select id="calidad">
+          <option value="1">Alta</option>
+          <option value="0.6">Media</option>
+          <option value="0.4">Rápida</option>
+        </select>
+      </label>
       <button id="exportar" class="primary">⬇ Exportar video</button>
     </div>
   </header>
@@ -78,7 +85,8 @@
   <script src="video-engine.js"></script>
   <script src="video-scenes.js"></script>
   <script src="video-ejemplos.js"></script>
+  <script src="vendor/mp4-muxer/mp4-muxer.js"></script>
   <script src="video-app.js"></script>
-  <script type="module" src="video-3d.js"></script>
+  <script type="module" src="video-3d-mundos.js"></script>
 </body>
 </html>

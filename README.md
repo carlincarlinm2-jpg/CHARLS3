@@ -76,17 +76,31 @@ Escenas incluidas: `titulo`, `objeto` (efectos `orbita`, `escaner`, `pulso`), `n
 
 ### Escenas 3D con cámara en movimiento
 
-`[3d: mundo | foco: … | camara: … | efecto: …]` dibuja un mundo 3D (Three.js, incluido en `public/vendor/three`, sin internet):
+`[3d: mundo | foco: … | camara: … | efecto: …]` dibuja un mundo 3D (Three.js, incluido en `public/vendor`, sin internet):
 
-| Mundo | foco | efecto |
+| Mundo | foco | efecto / opciones |
 | --- | --- | --- |
-| `calle` — calle empedrada de noche, gente caminando, maleta | `maleta`, `persona`, `calle`, `cielo` | `bluetooth`, `satelites` |
-| `telefono` — iPhone con mapa, pin y notificación (`objeto:`, `lugar:`) | `telefono` | |
-| `airtag` — AirTag que se abre en sus piezas | `airtag` | |
+| `calle` — Lisboa de noche: gente caminando, tranvía, faroles, maleta con AirTag | `maleta`, `persona`, `calle`, `cielo`, `tranvia` | `bluetooth`, `satelites` |
+| `dormitorio` — dos personas durmiendo en líneas de contorno, mosquitos | `cama`, `persona`, `otra`, `cabeza`, `mosquito` | `enjambre` (marca el OBJETIVO), `co2`, `calor` |
+| `telefono` — iPhone con la app de buscar: mapa, ruta, pin y ficha | `telefono` | `objeto:`, `lugar:` |
+| `airtag` — AirTag que se abre con el nombre de cada pieza | `airtag` | `piezas: no` |
+| `estudio` — escenario oscuro que presenta cualquier pieza del kit | `pieza` | `pieza:` (abajo), `color:` (un estilo), `girar: no` |
 
-Movimientos de `camara`: `fija`, `orbita`, `acercar`, `alejar`, `subir`, `bajar`, `seguir`. Si dos escenas seguidas usan el mismo mundo, no hay corte: la cámara viaja de un punto a otro, como en los videos hechos en 3D. Mira el ejemplo **AirTag en 3D**.
+Piezas del estudio: `persona`, `maleta`, `iphone`, `airtag`, `mosquito`, `macho`, `molecula`, `adn`, `gota`, `tubo`, `satelite`, `planeta`, `candado`, `tranvia`, `farol`.
 
-**🎵 Música** añade una pista de fondo (se repite y se desvanece al final). **⬇ Exportar video** graba el video en tiempo real (MP4 en Chrome/Edge/Safari, WebM en Firefox): no cambies de pestaña mientras graba. Luego súbelo con **📤 Publicar video**.
+Movimientos de `camara`: `fija`, `orbita`, `vuelta`, `acercar`, `alejar`, `subir`, `bajar`, `seguir`, `cenital`; `zoom: 1.5` acerca. Si dos escenas seguidas usan el mismo mundo, no hay corte: la cámara viaja de un punto a otro (y en el estudio una pieza se encoge mientras la siguiente crece). Mira los ejemplos **Mosquitos en 3D**, **AirTag en 3D** y **Catálogo de piezas 3D**.
+
+**Vista previa** elige la calidad del 3D mientras editas (Rápida/Media/Alta); la exportación siempre sale a 1080×1920. En Chrome y Edge el video se exporta **cuadro por cuadro** (WebCodecs): no se pierde ningún cuadro, siempre sale MP4 y, con buena tarjeta gráfica, tarda menos que el propio video. Si el navegador no lo admite, se graba en tiempo real.
+
+#### El kit de piezas
+
+`public/video-3d-kit.js` es la "plantilla": todas las piezas listas para combinar en mundos nuevos.
+
+- **Personas**: `persona({ piel, pelo, peinado, ropa, camisa, pantalon, accesorio, movil })` con articulaciones y `caminar()`/`quieto()`; `personaAleatoria()` para multitudes.
+- **Objetos**: `maleta`, `iphone` (+ `uiBuscar` para su pantalla), `airtag`, `satelite`, `farol`, `tranvia`, `mosquito`, `molecula`, `adn`, `gota`, `candado`, `planeta`, `tarjeta` (holográfica), `tuboY`.
+- **Efectos**: `ondas`, `rayo`, `particulas`, `estrellas`, `destello`, `luzPintada` (luz falsa en el suelo, barata), `sombra`.
+- **Estilo de contorno**: `superficieContorno`, `anillosContorno`, `cajaContorno` (el look de líneas del video del mosquito).
+- **Utilidades**: `mat` (materiales compartidos), `textura` (pintar con canvas), `fusionar` (une geometrías para que se dibujen de una vez).
 
 ### Añadir un tipo de escena o un estilo
 
@@ -106,7 +120,7 @@ Fabrica.escena('miescena', {
 Fabrica.estilo('miestilo', { nombre: 'Mi estilo', fondo1: '#000000', /* …misma paleta que "neon" */ });
 ```
 
-La escena aparece sola en el catálogo de la página. Los mundos 3D están en `public/video-3d.js` y se añaden igual, con `mundo('nombre', { descripcion, ejemplo, crear })`: `crear()` arma la escena de Three.js y devuelve sus `objetivos` (a dónde puede mirar la cámara) y una función `actualizar()` para animarla.
+La escena aparece sola en el catálogo de la página. Los mundos 3D están en `public/video-3d-mundos.js` y se añaden igual, con `mundo('nombre', { descripcion, ejemplo, crear })`: `crear()` arma la escena con piezas del kit y devuelve sus `objetivos` (a dónde puede mirar la cámara), `actualizar()` para animarla y, si quiere, `etiquetas()` que siguen a los objetos en pantalla. Para una pieza nueva del estudio basta con añadirla a `piezas` en el kit.
 
 ## Seguridad
 
@@ -123,9 +137,10 @@ public/graph.js    motor del grafo (fuerzas + canvas)
 public/app.js      datos, panel, búsqueda, guardado
 public/publish.js  publicador de video
 public/video.html  Fábrica de videos (video-engine.js motor, video-scenes.js escenas
-                   y estilos, video-3d.js mundos 3D, video-ejemplos.js guiones,
-                   video-app.js interfaz)
-public/vendor/     Three.js (licencia MIT) para las escenas 3D
+                   y estilos, video-3d.js motor 3D, video-3d-kit.js piezas,
+                   video-3d-mundos.js mundos, video-ejemplos.js guiones,
+                   video-app.js interfaz y exportación)
+public/vendor/     Three.js y mp4-muxer (licencia MIT)
 data/              tus datos (ignorados por git)
 ```
 
