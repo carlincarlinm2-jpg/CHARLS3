@@ -92,6 +92,8 @@ Movimientos de `camara`: `fija`, `orbita`, `vuelta`, `acercar`, `alejar`, `subir
 
 **Vista previa** elige la calidad del 3D mientras editas (Rápida/Media/Alta); la exportación siempre sale a 1080×1920. En Chrome y Edge el video se exporta **cuadro por cuadro** (WebCodecs): no se pierde ningún cuadro, siempre sale MP4 y, con buena tarjeta gráfica, tarda menos que el propio video. Si el navegador no lo admite, se graba en tiempo real.
 
+**🎵 Música** añade una pista de fondo (se repite y se desvanece al final). **⬇ Exportar video** genera el video final; luego súbelo con **📤 Publicar video**.
+
 #### El kit de piezas
 
 `public/video-3d-kit.js` es la "plantilla": todas las piezas listas para combinar en mundos nuevos.
